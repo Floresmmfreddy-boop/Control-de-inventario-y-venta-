@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang='es'>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>ControlVentas</title>
+  <style>
+    :root{
+      --bg:#eef2f7; --card:#ffffff; --line:#dbe2ea; --text:#1f2937; --muted:#6b7280;
+      --primary:#1f3a5f; --primary2:#35547c; --soft:#eef3f8; --danger:#b23a48; --ok:#166534;
+      --shadow:0 10px 28px rgba(17,24,39,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:linear-gradient(135deg,#f4f7fb,var(--bg));color:var(--text)}
+    button,input,select{font:inherit}
+    .app{min-height:100vh}
+    .topbar{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
+    .menu-btn{width:46px;height:46px;border:none;border-radius:14px;background:rgba(255,255,255,.14);color:#fff;font-size:22px;cursor:pointer}
+    .title{font-size:24px;font-weight:900}
+    .subtitle{font-size:13px;opacity:.92}
+    .shell{display:flex}
+    .sidebar{width:270px;background:#fff;border-right:1px solid var(--line);padding:16px;min-height:calc(100vh - 74px)}
+    .side-head{font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .nav-btn{width:100%;text-align:left;border:1px solid var(--line);background:#fff;color:var(--text);padding:14px 15px;border-radius:16px;margin-bottom:10px;cursor:pointer;font-weight:800}
+    .nav-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .main{flex:1;padding:18px;max-width:1200px;margin:0 auto;width:100%}
+    .view{display:none}
+    .view.active{display:block}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);margin-bottom:18px}
+    h2{margin:0 0 10px;font-size:28px}
+    h3{margin:0 0 10px;font-size:20px}
+    .sub{margin:0 0 14px;color:var(--muted);line-height:1.4}
+    label{display:block;font-weight:800;margin:0 0 7px}
+    input,select{width:100%;padding:13px 14px;border-radius:16px;border:1px solid var(--line);background:#fff}
+    input[readonly]{background:#f7f9fc;color:var(--muted)}
+    .row{display:grid;gap:12px}
+    .row.two{grid-template-columns:1fr 1fr}
+    .row.three{grid-template-columns:1fr 1fr 1fr}
+    .row.four{grid-template-columns:1.2fr .8fr .8fr 1.2fr}
+    .row.sales{grid-template-columns:1.15fr .95fr .9fr .9fr}
+    .btn{border:none;border-radius:16px;padding:13px 14px;font-weight:900;cursor:pointer}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-soft{background:var(--soft);color:var(--primary);border:1px solid #d7e3ef}
+    .btn-danger{background:var(--danger);color:#fff}
+    .btn-mini{padding:8px 10px;border-radius:12px;font-size:12px}
+    .status{margin-top:10px;font-size:14px;color:var(--muted)}
+    .hint{font-size:13px;color:var(--muted);margin-top:6px}
+    .small-stock{font-size:13px;color:var(--muted);margin-top:8px}
+    .empty{padding:14px;border:1px dashed var(--line);border-radius:16px;color:var(--muted);text-align:center;background:#fcfdff}
+    .line{display:grid;align-items:center;gap:10px;padding:12px 0;border-top:1px solid #ecf1f6}
+    .line:first-child{border-top:none}
+    .products-line{grid-template-columns:minmax(0,1fr) auto}
+    .sale-line{grid-template-columns:minmax(0,1fr) auto auto auto}
+    .name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tag{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}
+    .tag.ok{background:#ecfdf3;color:var(--ok)}
+    .tag.low{background:#fef2f2;color:var(--danger)}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .stat{background:#fbfcfd;border:1px solid var(--line);border-radius:18px;padding:14px}
+    .stat .k{font-size:13px;color:var(--muted)}
+    .stat .v{font-size:24px;font-weight:900;margin-top:5px}
+    .toolbar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px 10px;border-bottom:1px solid #e8eef5;text-align:left;vertical-align:top}
+    th{background:#f7f9fc}
+    .overlay{display:none}
+    .sale-basket{border:1px solid var(--line);border-radius:18px;overflow:hidden}
+    .sale-basket .sale-line{padding:10px 14px;background:#fff;grid-template-columns:minmax(0,1.4fr) auto auto auto;font-size:13px}
+    .sale-basket .sale-line:nth-child(odd){background:#fcfdff}
+    .sale-subt{font-weight:900;color:var(--primary)}
+    .compact-stock .line{grid-template-columns:minmax(0,1fr) auto;font-size:13px;padding:8px 0}
+    .compact-stock .name{font-size:13px;font-weight:700}
+    .compact-qty{font-size:13px;color:var(--muted);white-space:nowrap}
+    .pill-total{background:#f7f9fc;border:1px solid var(--line);border-radius:18px;padding:16px}
+    .pill-total .small{font-size:13px;color:var(--muted)}
+    .pill-total .big{font-size:30px;font-weight:900;color:var(--primary);margin-top:6px}
+    @media(max-width:920px){
+      .sidebar{position:fixed;left:-290px;top:74px;z-index:25;height:calc(100vh - 74px);transition:left .2s ease}
+      .sidebar.open{left:0}
+      .overlay{display:block;position:fixed;inset:74px 0 0 0;background:rgba(15,23,42,.25);z-index:24;opacity:0;pointer-events:none;transition:opacity .2s ease}
+      .overlay.open{opacity:1;pointer-events:auto}
+      .row.two,.row.three,.row.four,.row.sales,.toolbar,.stats{grid-template-columns:1fr}
+      .products-line{grid-template-columns:1fr}
+      .sale-line{grid-template-columns:minmax(0,1fr) auto auto}
+      .hide-mobile{display:none}
+      .main{padding:14px}
+      h2{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <div class='app'>
+    <div class='topbar'>
+      <button class='menu-btn' id='menuBtn'>☰</button>
+      <div>
+        <div class='title'>ControlVentas</div>
+        <div class='subtitle'>Inventario simple, ventas rápidas y resumen del día.</div>
+      </div>
+    </div>
+
+    <div class='shell'>
+      <aside class='sidebar' id='sidebar'>
+        <div class='side-head'>Menú</div>
+        <button class='nav-btn active' data-view='view-products'>📦 Productos e inventario</button>
+        <button class='nav-btn' data-view='view-sales'>🧾 Ventas, historial y resumen</button>
+        <button class='nav-btn' data-view='view-settings'>⚙️ Configuración</button>
+      </aside>
+
+      <main class='main'>
+        <section class='view active' id='view-products'>
+          <div class='card'>
+            <h2>📦 Productos e inventario</h2>
+            <p class='sub'>Administra el stock desde un solo bloque. Si eliges “Agregar producto nuevo”, después puedes definir su precio y costo en los bloques de abajo.</p>
+            <div class='status' id='productStatus'>Listo para trabajar inventario.</div>
+          </div>
+
+          <div class='card'>
+            <h3>📥 Inventario</h3>
+            <p class='sub'>Desde aquí puedes mover stock de un producto existente o elegir “Agregar producto nuevo”. Si eliges esa opción, escribes el nombre en la misma fila.</p>
+            <div class='row three'>
+              <div>
+                <label for='invProduct'>Producto</label>
+                <select id='invProduct'></select>
+              </div>
+              <div>
+                <label for='invNewProduct'>Nombre del producto nuevo</label>
+                <input id='invNewProduct' type='text' placeholder='Solo si elegiste agregar producto nuevo' />
+              </div>
+              <div>
+                <label for='invType'>Acción</label>
+                <select id='invType'>
+                  <option value='add'>Agregar stock</option>
+                  <option value='remove'>Retirar stock</option>
+                </select>
+              </div>
+            </div>
+            <div class='row two' style='margin-top:12px'>
+              <div>
+                <label for='invQty' id='invQtyLabel'>Cantidad</label>
+                <input id='invQty' type='number' min='0' step='0.001' placeholder='Ej: 10' />
+              </div>
+              <div>
+                <label for='invNote'>Nota opcional</label>
+                <input id='invNote' type='text' placeholder='Ej: compra nueva, merma, ajuste...' />
+              </div>
+            </div>
+            <div style='margin-top:12px'>
+              <button class='btn btn-soft' id='applyInventoryBtn'>Guardar movimiento</button>
+            </div>
+            <div class='status' id='inventoryStatus'>Sin movimientos nuevos.</div>
+          </div>
+
+          <div class='card'>
+            <h3>💰 Actualizar precio</h3>
+            <p class='sub'>Selecciona un producto y actualiza solo su precio de venta.</p>
+            <div class='row two'>
+              <div>
+                <label for='priceProduct'>Producto</label>
+                <select id='priceProduct'></select>
+              </div>
+              <div>
+                <label for='newPrice'>Nuevo precio</label>
+                <input id='newPrice' type='number' min='0' step='1' placeholder='Ej: 1200' />
+              </div>
+            </div>
+            <div style='margin-top:12px'>
+              <button class='btn btn-soft' id='updatePriceBtn'>Actualizar precio</button>
+            </div>
+            <div class='status' id='priceStatus'>Sin cambios de precio.</div>
+          </div>
+
+          <div class='card'>
+            <h3>🧾 Actualizar costo</h3>
+            <p class='sub'>Selecciona un producto y actualiza solo su costo.</p>
+            <div class='row two'>
+              <div>
+                <label for='costProduct'>Producto</label>
+                <select id='costProduct'></select>
+              </div>
+              <div>
+                <label for='newCost'>Nuevo costo</label>
+                <input id='newCost' type='number' min='0' step='1' placeholder='Ej: 700' />
+              </div>
+            </div>
+            <div style='margin-top:12px'>
+              <button class='btn btn-soft' id='updateCostBtn'>Actualizar costo</button>
+            </div>
+            <div class='status' id='costStatus'>Sin cambios de costo.</div>
+          </div>
+
+          <div class='card'>
+            <h3>📋 Resumen de stock</h3>
+            <div id='productsList'></div>
+          </div>
+
+          <div class='card'>
+            <h3>🕘 Historial de acciones de inventario</h3>
+            <div id='inventoryHistoryWrap'></div>
+          </div>
+        </section>
+
+        <section class='view' id='view-sales'>
+          <div class='card'>
+            <h2>🧾 Nueva venta</h2>
+            <p class='sub'>Selecciona un producto. El precio se toma automáticamente desde productos e inventario y muestra la unidad definida en configuración.</p>
+            <div class='row sales'>
+              <div>
+                <label for='saleProduct'>Producto</label>
+                <select id='saleProduct'></select>
+              </div>
+              <div>
+                <label for='salePrice'>Precio</label>
+                <input id='salePrice' type='text' readonly />
+              </div>
+              <div>
+                <label for='saleQty' id='saleQtyLabel'>Cantidad</label>
+                <input id='saleQty' type='number' min='0' step='0.001' placeholder='Ej: 2.5' />
+                <div class='hint'>Si escribes cantidad, se calcula el total.</div>
+              </div>
+              <div>
+                <label for='saleTotalInput'>Total del producto</label>
+                <input id='saleTotalInput' type='number' min='0' step='1' placeholder='Ej: 2000' />
+                <div class='hint'>Si escribes el total, se calcula la cantidad necesaria.</div>
+              </div>
+            </div>
+            <div class='row two' style='margin-top:12px'>
+              <div>
+                <label for='saleMethod'>Método de pago</label>
+                <select id='saleMethod'>
+                  <option>Efectivo</option>
+                  <option>Transferencia</option>
+                  <option>Tarjeta</option>
+                  <option>Otro</option>
+                </select>
+              </div>
+              <div>
+                <label for='saleNote'>Observación</label>
+                <input id='saleNote' type='text' placeholder='Opcional' />
+              </div>
+            </div>
+            <div style='margin-top:12px' class='row two'>
+              <button class='btn btn-soft' id='addItemBtn'>Agregar producto</button>
+              <button class='btn btn-primary' id='saveSaleBtn'>Guardar venta</button>
+            </div>
+            <div class='status' id='saleStatus'>Listo para registrar ventas.</div>
+          </div>
+
+          <div class='card'>
+            <h3>🧺 Venta actual</h3>
+            <div class='sale-basket' id='saleItemsList'></div>
+            <div class='pill-total' style='margin-top:14px'>
+              <div class='small'>Total de la venta</div>
+              <div class='big' id='saleTotal'>$0</div>
+            </div>
+          </div>
+
+          <div class='card'>
+            <h3>📊 Resumen del día <span id='todayDate' style='font-size:14px;color:#6b7280;'></span></h3>
+            <div class='stats'>
+              <div class='stat'><div class='k'>Ventas</div><div class='v' id='statCount'>0</div></div>
+              <div class='stat'><div class='k'>Total vendido</div><div class='v' id='statRevenue'>$0</div></div>
+              <div class='stat'><div class='k'>Ganancia estimada</div><div class='v' id='statProfit'>$0</div></div>
+              <div class='stat'><div class='k'>Promedio por venta</div><div class='v' id='statAvg'>$0</div></div>
+            </div>
+            <div id='analysisWrap' style='margin-top:12px'></div>
+          </div>
+
+          <div class='card'>
+            <h3>📜 Historial de ventas</h3>
+            <div class='toolbar'>
+              <input id='searchInput' type='text' placeholder='Buscar por producto...' />
+              <button class='btn btn-soft' id='exportCsvBtn'>Exportar CSV</button>
+              <button class='btn btn-danger' id='clearSalesBtn'>Borrar ventas</button>
+            </div>
+            <div id='historyWrap' style='margin-top:12px'></div>
+          </div>
+        </section>
+
+        <section class='view' id='view-settings'>
+          <div class='card'>
+            <h2>⚙️ Configuración</h2>
+            <p class='sub'>Define cómo quieres mostrar la cantidad y cómo quieres aproximar los totales.</p>
+            <div class='row two'>
+              <div>
+                <label for='cfgBaseUnit'>Unidad de medida</label>
+                <select id='cfgBaseUnit'>
+                  <option value='kg'>kg</option>
+                  <option value='oz'>oz</option>
+                  <option value='lb'>lb</option>
+                  <option value='unidades'>unidades</option>
+                </select>
+              </div>
+              <div>
+                <label for='cfgRounding'>Aproximación del total</label>
+                <select id='cfgRounding'>
+                  <option value='exact'>Exacto</option>
+                  <option value='peso'>Al peso</option>
+                  <option value='10'>A múltiplos de 10</option>
+                  <option value='100'>A múltiplos de 100</option>
+                  <option value='up'>Siempre hacia arriba</option>
+                  <option value='down'>Siempre hacia abajo</option>
+                </select>
+              </div>
+            </div>
+            <div style='margin-top:12px' class='row two'>
+              <button class='btn btn-primary' id='saveConfigBtn'>Guardar configuración</button>
+              <button class='btn btn-danger' id='resetDemoBtn'>Restaurar datos</button>
+            </div>
+            <div class='status' id='configStatus'>Puedes cambiar la configuración cuando quieras.</div>
+            <div class='status' id='firebaseStatus'>Conectando Firebase...</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class='overlay' id='overlay'></div>
+  </div>
+
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDBCyIJctCkTKExK1Fpke1Z0RuUQcrBDyQ",
+      authDomain: "registro-de-inventario-y-venta.firebaseapp.com",
+      projectId: "registro-de-inventario-y-venta",
+      storageBucket: "registro-de-inventario-y-venta.firebasestorage.app",
+      messagingSenderId: "527306025889",
+      appId: "1:527306025889:web:05ed826285645c0e31b9e0",
+      measurementId: "G-YNYCE4PTK5"
+    };
+
+    let fbReady = false;
+    let db = null;
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      fbReady = true;
+    } catch (err) {
+      console.error("Firebase init error:", err);
+      fbReady = false;
+    }
+
+    window.cloudLoadState = async function(){
+      if(!fbReady || !db) return null;
+      try {
+        const ref = doc(db, "app_data", "main");
+        const snap = await getDoc(ref);
+        if(!snap.exists()) return null;
+        return snap.data();
+      } catch (err) {
+        console.error("Error cargando Firebase:", err);
+        return null;
+      }
+    };
+
+    window.cloudSaveState = async function(payload){
+      if(!fbReady || !db) return false;
+      try {
+        const ref = doc(db, "app_data", "main");
+        await setDoc(ref, payload);
+        return true;
+      } catch (err) {
+        console.error("Error guardando Firebase:", err);
+        return false;
+      }
+    };
+
+  (async function(){
+    const STORAGE_PRODUCTS='cv_products_v6';
+    const STORAGE_SALES='cv_sales_v6';
+    const STORAGE_CFG='cv_cfg_v6';
+    const STORAGE_MOVES='cv_moves_v6';
+    let saleDraft=[];
+    let lastEdited='qty';
+
+    const demoProducts=[];
+
+    function $(id){ return document.getElementById(id); }
+    function money(n){ return '$' + (Number(n)||0).toLocaleString('es-CL'); }
+    function qty(n){ return (Number(n)||0).toLocaleString('es-CL',{minimumFractionDigits:0,maximumFractionDigits:3}); }
+    function esc(s){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
+    function parseJSON(s,fallback){ try{ const x=JSON.parse(s); return x==null?fallback:x; }catch(e){ return fallback; } }
+    function nowStr(){ return new Date().toLocaleString('es-CL'); }
+    function uid(){ return Date.now() + '_' + Math.floor(Math.random()*100000); }
+    function getCfg(){ return parseJSON(localStorage.getItem(STORAGE_CFG), {baseUnit:'kg', rounding:'peso'}); }
+    function saveCfgLocal(cfg){ localStorage.setItem(STORAGE_CFG, JSON.stringify(cfg)); }
+    function getProducts(){ 
+      const p=parseJSON(localStorage.getItem(STORAGE_PRODUCTS), null);
+      if(!p){ localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(demoProducts)); return demoProducts.slice(); }
+      return p;
+    }
+    function saveProductsLocal(arr){ localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(arr)); }
+    function getSales(){ return parseJSON(localStorage.getItem(STORAGE_SALES), []); }
+    function saveSalesLocal(arr){ localStorage.setItem(STORAGE_SALES, JSON.stringify(arr)); }
+    function getMoves(){ return parseJSON(localStorage.getItem(STORAGE_MOVES), []); }
+    function saveMovesLocal(arr){ localStorage.setItem(STORAGE_MOVES, JSON.stringify(arr)); }
+    function unitLabel(){ const u=getCfg().baseUnit; return u==='unidades' ? 'unidades' : u; }
+    function quantityLabel(){ const u=getCfg().baseUnit; return u==='unidades' ? 'Unidades' : 'Cantidad (' + u + ')'; }
+
+    async function syncAllToFirebase(){
+      if(!window.fbReady || !window.cloudSaveState) return false;
+      const payload = {
+        products: getProducts(),
+        sales: getSales(),
+        moves: getMoves(),
+        cfg: getCfg(),
+        updatedAt: new Date().toISOString()
+      };
+      const ok = await window.cloudSaveState(payload);
+      if($('firebaseStatus')) $('firebaseStatus').textContent = ok ? 'Firebase conectado y sincronizando.' : 'Firebase no pudo guardar; usando almacenamiento local.';
+      return ok;
+    }
+
+    async function loadAllFromFirebase(){
+      if(!window.fbReady || !window.cloudLoadState) {
+        if($('firebaseStatus')) $('firebaseStatus').textContent = 'Firebase no disponible; usando almacenamiento local.';
+        return;
+      }
+      const data = await window.cloudLoadState();
+      if(!data){
+        if($('firebaseStatus')) $('firebaseStatus').textContent = 'Firebase conectado. Aún no hay datos guardados.';
+        return;
+      }
+      if(Array.isArray(data.products)) localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(data.products));
+      if(Array.isArray(data.sales)) localStorage.setItem(STORAGE_SALES, JSON.stringify(data.sales));
+      if(Array.isArray(data.moves)) localStorage.setItem(STORAGE_MOVES, JSON.stringify(data.moves));
+      if(data.cfg) localStorage.setItem(STORAGE_CFG, JSON.stringify(data.cfg));
+      if($('firebaseStatus')) $('firebaseStatus').textContent = 'Datos cargados desde Firebase.';
+    }
+
+    async function saveProducts(arr){ saveProductsLocal(arr); await syncAllToFirebase(); }
+    async function saveSales(arr){ saveSalesLocal(arr); await syncAllToFirebase(); }
+    async function saveMoves(arr){ saveMovesLocal(arr); await syncAllToFirebase(); }
+    async function saveCfg(cfg){ saveCfgLocal(cfg); await syncAllToFirebase(); }
+
+    function applyRounding(value){
+      const mode=getCfg().rounding;
+      const n=Number(value)||0;
+      if(mode==='exact') return Number(n.toFixed(3));
+      if(mode==='peso') return Math.round(n);
+      if(mode==='10') return Math.round(n/10)*10;
+      if(mode==='100') return Math.round(n/100)*100;
+      if(mode==='up') return Math.ceil(n);
+      if(mode==='down') return Math.floor(n);
+      return n;
+    }
+
+    function renderMenu(){
+      document.querySelectorAll('.nav-btn').forEach(btn=>{
+        btn.onclick=()=>{
+          document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+          document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+          btn.classList.add('active');
+          $(btn.dataset.view).classList.add('active');
+          $('sidebar').classList.remove('open');
+          $('overlay').classList.remove('open');
+        };
+      });
+      $('menuBtn').onclick=()=>{ $('sidebar').classList.toggle('open'); $('overlay').classList.toggle('open'); };
+      $('overlay').onclick=()=>{ $('sidebar').classList.remove('open'); $('overlay').classList.remove('open'); };
+    }
+
+    function renderConfig(){
+      const cfg=getCfg();
+      $('cfgBaseUnit').value=cfg.baseUnit;
+      $('cfgRounding').value=cfg.rounding;
+      $('saleQtyLabel').textContent=quantityLabel();
+      $('invQtyLabel').textContent=quantityLabel();
+    }
+
+    function toggleNewProductFields(){
+      const isNew = $('invProduct').value === '__new__';
+      const input = $('invNewProduct');
+      const label = document.querySelector("label[for='invNewProduct']");
+      input.disabled = !isNew;
+      input.style.display = isNew ? 'block' : 'none';
+      if(label) label.style.display = isNew ? 'block' : 'none';
+      if(!isNew){
+        input.value = '';
+      }
+      if(isNew){
+        $('invType').value = 'add';
+      }
+      $('invType').disabled = isNew;
+    }
+
+    function renderSelectors(){
+      const products=getProducts();
+      const options=products.map(p=>"<option value='"+esc(p.name)+"'>"+esc(p.name)+"</option>").join('');
+      const empty = "<option value=''>Sin productos</option>";
+      $('invProduct').innerHTML="<option value='__new__'>Agregar producto nuevo</option>" + (options || '');
+      $('saleProduct').innerHTML=options || empty;
+      $('priceProduct').innerHTML=options || empty;
+      $('costProduct').innerHTML=options || empty;
+      syncSalePrice();
+      toggleNewProductFields();
+    }
+
+    function renderProducts(){
+      const products=getProducts();
+      const unit=unitLabel();
+      const wrap=$('productsList');
+      if(!products.length){ wrap.innerHTML="<div class='empty'>No hay productos guardados.</div>"; return; }
+      wrap.className='compact-stock';
+      wrap.innerHTML=products.map(p=>{
+        return "<div class='line'><div class='name'>"+esc(p.name)+"</div><div class='compact-qty'>"+qty(p.stock)+" "+esc(unit)+"</div></div>";
+      }).join('');
+    }
+
+    function renderInventoryHistory(){
+      const moves=getMoves();
+      if(!moves.length){ $('inventoryHistoryWrap').innerHTML="<div class='empty'>Todavía no hay acciones de inventario.</div>"; return; }
+      $('inventoryHistoryWrap').innerHTML="<table><thead><tr><th>Fecha</th><th>Producto</th><th>Acción</th><th>Detalle</th><th>Nota</th></tr></thead><tbody>"+moves.slice().reverse().map(m=>{
+        const action = m.type==='add' ? 'Agregar stock' : m.type==='remove' ? 'Retirar stock' : m.type==='price' ? 'Cambio de precio' : 'Cambio de costo';
+        const detail = m.type==='add' ? '+ ' + qty(m.qty) + ' ' + esc(m.unit)
+                     : m.type==='remove' ? '- ' + qty(m.qty) + ' ' + esc(m.unit)
+                     : money(m.qty);
+        return "<tr><td>"+esc(m.createdAt)+"</td><td>"+esc(m.product)+"</td><td>"+action+"</td><td>"+detail+"</td><td>"+esc(m.note||'')+"</td></tr>";
+      }).join('')+"</tbody></table>";
+    }
+
+    function getSelectedProduct(){ return getProducts().find(p=>p.name===$('saleProduct').value) || null; }
+
+    function syncSalePrice(){
+      const p=getSelectedProduct();
+      $('salePrice').value=p ? money(p.price)+" ("+unitLabel()+")" : '';
+      $('saleQtyLabel').textContent=quantityLabel();
+    }
+
+    function updateSaleCalculation(){
+      const p=getSelectedProduct();
+      if(!p) return;
+      const unitPrice=Number(p.price)||0;
+      let q=Number($('saleQty').value||0);
+      let total=Number($('saleTotalInput').value||0);
+
+      if(lastEdited==='qty' && q>0){
+        total=applyRounding(q*unitPrice);
+        $('saleTotalInput').value = total ? total : '';
+      }else if(lastEdited==='total' && total>0 && unitPrice>0){
+        q=total/unitPrice;
+        $('saleQty').value = Number(q.toFixed(3)) || '';
+      }
+      syncSalePrice();
+      toggleNewProductFields();
+    }
+
+    function renderDraft(){
+      const unit=unitLabel();
+      const wrap=$('saleItemsList');
+      if(!saleDraft.length){ wrap.innerHTML="<div class='empty'>Aún no agregas productos a esta venta.</div>"; $('saleTotal').textContent='$0'; return; }
+      let total=0;
+      wrap.innerHTML=saleDraft.map((it,i)=>{
+        total += it.total;
+        return "<div class='sale-line line'>" +
+          "<div class='name'>"+esc(it.product)+"</div>" +
+          "<div class='compact-qty'>"+qty(it.qty)+" "+esc(unit)+"</div>" +
+          "<div class='sale-subt'>"+money(it.total)+"</div>" +
+          "<div><button class='btn btn-danger btn-mini' onclick='window.removeDraft("+i+")'>Quitar</button></div>" +
+          "</div>";
+      }).join('');
+      $('saleTotal').textContent=money(total);
+    }
+
+    function renderSummaryAndHistory(){
+      const sales=getSales();
+      const q=($('searchInput').value||'').toLowerCase().trim();
+      const unit=unitLabel();
+      let totalRevenue=0,totalProfit=0;
+      const map={};
+
+      sales.forEach(s=>{
+        totalRevenue += Number(s.total)||0;
+        totalProfit += Number(s.profit)||0;
+        s.items.forEach(it=>{
+          if(!map[it.product]) map[it.product]={qty:0,total:0};
+          map[it.product].qty += Number(it.qty)||0;
+          map[it.product].total += Number(it.total)||0;
+        });
+      });
+
+      $('statCount').textContent=sales.length.toLocaleString('es-CL');
+      $('statRevenue').textContent=money(totalRevenue);
+      $('statProfit').textContent=money(totalProfit);
+      $('statAvg').textContent=money(sales.length ? Math.round(totalRevenue/sales.length) : 0);
+
+      const keys=Object.keys(map);
+      $('analysisWrap').innerHTML=!keys.length ? "<div class='empty'>Todavía no hay ventas guardadas.</div>" :
+        "<table><thead><tr><th>Producto</th><th>Cantidad vendida</th><th>Total</th></tr></thead><tbody>"+keys.map(k=>"<tr><td>"+esc(k)+"</td><td>"+qty(map[k].qty)+" "+esc(unit)+"</td><td>"+money(map[k].total)+"</td></tr>").join('')+"</tbody></table>";
+
+      const filtered=sales.filter(s=>!q || s.items.some(it=>it.product.toLowerCase().includes(q)) || (s.note||'').toLowerCase().includes(q));
+      $('historyWrap').innerHTML=!filtered.length ? "<div class='empty'>No hay ventas para mostrar.</div>" :
+        "<table><thead><tr><th>Fecha</th><th>Detalle</th><th>Total</th><th>Obs.</th></tr></thead><tbody>"+filtered.slice().reverse().map(s=>"<tr><td>"+esc(s.createdAt)+"</td><td>"+s.items.map(it=>esc(it.product)+' · '+qty(it.qty)+' '+esc(unit)).join('<br>')+"</td><td>"+money(s.total)+"</td><td>"+esc(s.note||'')+"</td></tr>").join('')+"</tbody></table>";
+    }
+
+    function setToday(){
+      $('todayDate').textContent=' - ' + new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+    }
+
+    $('updatePriceBtn').onclick=async function(){
+      const name = $('priceProduct').value;
+      const price = Math.round(Number($('newPrice').value || 0));
+      const products = getProducts();
+      const p = products.find(x => x.name === name);
+      if(!p){ alert('Selecciona un producto.'); return; }
+      if(price < 0 || !Number.isFinite(price)){ alert('Ingresa un precio válido.'); return; }
+
+      p.price = price;
+      await saveProducts(products);
+
+      const moves = getMoves();
+      moves.push({
+        id: uid(),
+        createdAt: nowStr(),
+        product: name,
+        type: 'price',
+        qty: price,
+        unit: unitLabel(),
+        note: 'Precio actualizado'
+      });
+      await saveMoves(moves);
+
+      $('newPrice').value = '';
+      $('priceStatus').textContent = 'Precio actualizado correctamente.';
+      renderProducts();
+      renderSelectors();
+      renderInventoryHistory();
+      renderSummaryAndHistory();
+    };
+
+    $('updateCostBtn').onclick=async function(){
+      const name = $('costProduct').value;
+      const cost = Math.round(Number($('newCost').value || 0));
+      const products = getProducts();
+      const p = products.find(x => x.name === name);
+      if(!p){ alert('Selecciona un producto.'); return; }
+      if(cost < 0 || !Number.isFinite(cost)){ alert('Ingresa un costo válido.'); return; }
+
+      p.cost = cost;
+      await saveProducts(products);
+
+      const moves = getMoves();
+      moves.push({
+        id: uid(),
+        createdAt: nowStr(),
+        product: name,
+        type: 'cost',
+        qty: cost,
+        unit: unitLabel(),
+        note: 'Costo actualizado'
+      });
+      await saveMoves(moves);
+
+      $('newCost').value = '';
+      $('costStatus').textContent = 'Costo actualizado correctamente.';
+      renderProducts();
+      renderSelectors();
+      renderInventoryHistory();
+      renderSummaryAndHistory();
+    };
+
+    $('invProduct').onchange = toggleNewProductFields;
+
+    $('applyInventoryBtn').onclick=async function(){
+      const selected = $('invProduct').value;
+      const type = $('invType').value;
+      const amount = Number($('invQty').value||0);
+      const note = ($('invNote').value||'').trim();
+
+      if(!(amount>0)){ alert('Ingresa una cantidad válida.'); return; }
+
+      const products = getProducts();
+
+      if(selected === '__new__'){
+        const name = ($('invNewProduct').value||'').trim();
+
+        if(!name){ alert('Escribe el nombre del producto nuevo.'); return; }
+        if(products.some(x=>x.name.toLowerCase()===name.toLowerCase())){
+          alert('Ese producto ya existe. Selecciónalo en la lista.');
+          return;
+        }
+
+        products.push({name:name, cost:0, price:0, stock:Number(amount.toFixed(3))});
+        await saveProducts(products);
+
+        const moves = getMoves();
+        moves.push({
+          id:uid(),
+          createdAt:nowStr(),
+          product:name,
+          type:'add',
+          qty:Number(amount.toFixed(3)),
+          unit:unitLabel(),
+          note: note || 'Producto nuevo agregado'
+        });
+        await saveMoves(moves);
+
+        $('inventoryStatus').textContent='Producto nuevo agregado al inventario.';
+      } else {
+        const p = products.find(x=>x.name===selected);
+        if(!p){ alert('Selecciona un producto.'); return; }
+
+        const next = Number(p.stock||0) + (type==='add' ? amount : -amount);
+        if(next < 0){
+          alert('No hay stock suficiente para retirar esa cantidad.');
+          return;
+        }
+
+        p.stock = Number(next.toFixed(3));
+        await saveProducts(products);
+
+        const moves = getMoves();
+        moves.push({
+          id:uid(),
+          createdAt:nowStr(),
+          product:selected,
+          type:type,
+          qty:Number(amount.toFixed(3)),
+          unit:unitLabel(),
+          note: note
+        });
+        await saveMoves(moves);
+
+        $('inventoryStatus').textContent='Movimiento aplicado correctamente.';
+      }
+
+      $('invQty').value='';
+      $('invNote').value='';
+      $('invNewProduct').value='';
+      renderProducts();
+      renderSelectors();
+      renderInventoryHistory();
+      renderSummaryAndHistory();
+    };
+
+    $('saleProduct').onchange=syncSalePrice;
+    $('saleQty').oninput=function(){ lastEdited='qty'; updateSaleCalculation(); };
+    $('saleTotalInput').oninput=function(){ lastEdited='total'; updateSaleCalculation(); };
+
+    $('addItemBtn').onclick=function(){
+      const p=getSelectedProduct();
+      if(!p){ alert('Selecciona un producto.'); return; }
+      const quantity=Number($('saleQty').value||0);
+      const total=applyRounding(Number($('saleTotalInput').value||0));
+      if(!(quantity>0) || !(total>0)){ alert('Ingresa cantidad o total para calcular la venta.'); return; }
+      if(quantity > Number(p.stock||0)+1e-9){ alert('No hay stock suficiente.'); return; }
+
+      saleDraft.push({
+        product:p.name,
+        qty:Number(quantity.toFixed(3)),
+        unitPrice:Number(p.price)||0,
+        total:total,
+        profit:applyRounding(total - quantity*(Number(p.cost)||0)),
+        method:$('saleMethod').value
+      });
+      $('saleStatus').textContent='Producto agregado a la venta.';
+      $('saleQty').value=''; $('saleTotalInput').value='';
+      renderDraft();
+    };
+
+    $('saveSaleBtn').onclick=async function(){
+      if(!saleDraft.length){ alert('No hay productos en la venta.'); return; }
+      const products=getProducts();
+      for(const item of saleDraft){
+        const p=products.find(x=>x.name===item.product);
+        if(!p || item.qty > Number(p.stock||0)+1e-9){ alert('Algún producto ya no tiene stock suficiente.'); return; }
+      }
+      saleDraft.forEach(item=>{
+        const p=products.find(x=>x.name===item.product);
+        p.stock = Number((Number(p.stock||0) - item.qty).toFixed(3));
+      });
+      await saveProducts(products);
+
+      const sales=getSales();
+      const total=saleDraft.reduce((a,b)=>a+(Number(b.total)||0),0);
+      const profit=saleDraft.reduce((a,b)=>a+(Number(b.profit)||0),0);
+      sales.push({id:uid(), createdAt:nowStr(), note:($('saleNote').value||'').trim(), items:saleDraft.slice(), total, profit});
+      await saveSales(sales);
+
+      saleDraft=[]; $('saleQty').value=''; $('saleTotalInput').value=''; $('saleMethod').value='Efectivo'; $('saleNote').value='';
+      renderDraft(); renderProducts(); renderSelectors(); renderSummaryAndHistory();
+      $('saleStatus').textContent='Venta guardada correctamente.';
+    };
+
+    $('searchInput').oninput=renderSummaryAndHistory;
+    $('clearSalesBtn').onclick=async function(){
+      if(!confirm('¿Seguro que quieres borrar todas las ventas?')) return;
+      await saveSales([]);
+      saleDraft=[]; renderDraft(); renderSummaryAndHistory();
+      $('saleStatus').textContent='Se borraron las ventas.';
+    };
+
+    $('exportCsvBtn').onclick=function(){
+      const sales=getSales();
+      const unit=unitLabel();
+      const lines=['fecha,producto,cantidad,unidad,total,metodo,observacion'];
+      sales.forEach(s=>s.items.forEach(it=>{
+        let row=[s.createdAt,it.product,it.qty,unit,it.total,it.method,s.note||''].map(v=>{
+          let x=String(v??'');
+          if(x.includes('"')) x=x.replace(/"/g,'""');
+          if(/[",\n]/.test(x)) x='"'+x+'"';
+          return x;
+        }).join(',');
+        lines.push(row);
+      }));
+      const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url; a.download='controlventas.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    };
+
+    $('saveConfigBtn').onclick=async function(){
+      await saveCfg({baseUnit:$('cfgBaseUnit').value, rounding:$('cfgRounding').value});
+      $('configStatus').textContent='Configuración guardada.';
+      renderConfig(); renderProducts(); renderSelectors(); renderInventoryHistory(); renderSummaryAndHistory(); renderDraft();
+    };
+
+    $('resetDemoBtn').onclick=async function(){
+      if(!confirm('¿Restaurar datos?')) return;
+      localStorage.removeItem(STORAGE_PRODUCTS);
+      localStorage.removeItem(STORAGE_SALES);
+      localStorage.removeItem(STORAGE_CFG);
+      localStorage.removeItem(STORAGE_MOVES);
+      saleDraft=[];
+      renderConfig(); renderProducts(); renderSelectors(); renderInventoryHistory(); renderDraft(); renderSummaryAndHistory();
+      await syncAllToFirebase();
+    };
+
+    window.removeDraft=function(i){ saleDraft.splice(i,1); renderDraft(); };
+
+    await loadAllFromFirebase();
+
+    function init(){
+      renderMenu(); renderConfig(); renderProducts(); renderSelectors(); renderInventoryHistory(); renderDraft(); renderSummaryAndHistory(); setToday();
+      $('productStatus').textContent='Listo para trabajar inventario.';
+      $('inventoryStatus').textContent='Sin movimientos nuevos.';
+      $('saleStatus').textContent='Listo para registrar ventas.';
+      $('configStatus').textContent='Puedes cambiar la configuración cuando quieras.';
+      if ($('priceStatus')) $('priceStatus').textContent='Sin cambios de precio.';
+      if ($('costStatus')) $('costStatus').textContent='Sin cambios de costo.';
+    }
+    init();
+  })();
+  
+  </script>
+</body>
+</html>
